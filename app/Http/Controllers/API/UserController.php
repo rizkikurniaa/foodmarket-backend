@@ -10,8 +10,9 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
-class APIUserController extends Controller
+class UserController extends Controller
 {
     use PasswordValidationRules;
 
@@ -25,7 +26,7 @@ class APIUserController extends Controller
 
             //Check credentials (login)
             $credentials = request(['email', 'password']);
-            if(!Auth::attempt([$credentials])){
+            if(!Auth::attempt($credentials)){
                 return ResponseFormatter::error([
                     'message' => 'Unauthorized'
                 ], 'Authentication Failed', 500);
@@ -38,7 +39,7 @@ class APIUserController extends Controller
             }
 
             //If succeed then login
-            $tokenResult = $user->createToken('authToken')->plaintTextToken;
+            $tokenResult = $user->createToken('authToken')->plainTextToken;
             return ResponseFormatter::success([
                 'access_token' => $tokenResult,
                 'token_type' => 'Bearer',
@@ -94,5 +95,44 @@ class APIUserController extends Controller
         $token = $request->user()->currentAccessToken()->delete();
 
         return ResponseFormatter::success($token, 'Token Revoked');
+    }
+
+    public function fetch(Request $request){
+        return ResponseFormatter::success(
+            $request->user(), 'User profile data successfully retrieved');
+    }
+
+    public function updateProfile(Request $request){
+        $data = $request->all();
+
+        $user = Auth::user();
+        $user->update($data);
+
+        return ResponseFormatter::success($user, 'Profile Updated');
+    }
+
+    public function updatePhoto(Request $request){
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|image|max:2048'
+        ]);
+
+        if($validator->fails())
+        {
+            return ResponseFormatter::error([
+                'error' => $validator->errors(),
+                    ], 'Update photo failed', 401);
+        }
+
+        if($request->file('file'))
+        {
+            $file = $request->file->store('assets/user', 'public');
+
+            //Save photo to database (url)
+            $user = Auth::user();
+            $user->profile_photo_path = $file;
+            $user->update();
+
+            return ResponseFormatter::success([$file], 'File successfully uploaded');
+        }
     }
 }
