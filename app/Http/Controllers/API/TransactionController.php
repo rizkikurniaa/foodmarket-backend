@@ -53,4 +53,16 @@ class TransactionController extends Controller
             'Transaction data successfully retrieved'
         );
     }
+
+    public function update(Request $request, $id)
+    {
+        //get data by id
+        $transaction = Transaction::findOrFail($id);
+
+        //then we update the data
+        $transaction->update($request->all());
+
+        //and then give the updated data as a return
+        return ResponseFormatter::success($transaction, 'Transaction updated successfully');
+    }
 }
