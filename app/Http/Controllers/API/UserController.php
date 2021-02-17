@@ -56,18 +56,29 @@ class UserController extends Controller
 
     public function register(Request $request){
         try{
-            $request->validate([
-                'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-                'password' => $this->passwordRules()
+
+            //Input validation
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email',
+                'password' => 'required'
             ]);
+
+            if($validator->fails()){
+                return response()->json($validator->errors(), 400);
+            }
+
+            // $request->validate([
+            //     'name' => ['required', 'string', 'max:255'],
+            //     'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            //     'password' => $this->passwordRules()
+            // ]);
 
             User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'address' => $request->address,
                 'houseNumber' => $request->houseNumber,
-                'phoneNumber' => $request->phonenumber,
+                'phoneNumber' => $request->phoneNumber,
                 'city' => $request->city,
                 'password' => Hash::make($request->password),
             ]);
